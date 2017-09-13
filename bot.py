@@ -60,11 +60,10 @@ class marudor_only:
         return username == "marudor"
 
 
-class UserCreation:
+class CreateUserConversation:
     WAIT_FOR_HOMETOWN = 0
 
-
-class OpCreation:
+class CreateOpConversation:
     WAIT_FOR_DATE = 1
     WAIT_FOR_CITY = 2
     CONFIRM_CITY = 3
@@ -84,6 +83,7 @@ newop - Trage neue Reise ein (marudor-only)
 Todo:
 - Zeige nur zukünftige Reisen an
 - /deleteop
+- /myorders
     """
 
     def __init__(self):
@@ -98,42 +98,28 @@ Todo:
         dp.add_handler(ConversationHandler(
             entry_points=[
                 CommandHandler("start", self.command_start),
-                CommandHandler("changehometown", self.command_changehometown)
-            ],
-            states={
-                UserCreation.WAIT_FOR_HOMETOWN: [
-                    MessageHandler(Filters.text, self.handle_hometown)
-                ]
-            },
-            fallbacks=[]
-        ))
-
-        dp.add_handler(ConversationHandler(
-            entry_points=[
-                CommandHandler("newop", self.command_newop)
-            ],
-            states={
-                OpCreation.WAIT_FOR_DATE: [
-                    MessageHandler(Filters.text, self.handle_newop_date, pass_user_data=True)
-                ],
-                OpCreation.WAIT_FOR_CITY: [
-                    MessageHandler(Filters.text, self.handle_newop_city, pass_user_data=True)
-                ],
-                OpCreation.CONFIRM_CITY: [
-                    CallbackQueryHandler(self.handle_newop_city_confirmation, pattern="city_", pass_user_data=True)
-                ],
-                OpCreation.WHAT_TO_DO: [
-                    MessageHandler(Filters.text, self.handle_next_action, pass_user_data=True)
-                ]
-            },
-            fallbacks=[]
-        ))
-
-        dp.add_handler(ConversationHandler(
-            entry_points=[
+                CommandHandler("changehometown", self.command_changehometown),
+                CommandHandler("newop", self.command_newop),
                 RegexHandler("/order_(\d+)", self.command_order, pass_groups=True, pass_user_data=True)
             ],
             states={
+                CreateUserConversation.WAIT_FOR_HOMETOWN: [
+                    MessageHandler(Filters.text, self.handle_hometown)
+                ],
+
+                CreateOpConversation.WAIT_FOR_DATE: [
+                    MessageHandler(Filters.text, self.handle_newop_date, pass_user_data=True)
+                ],
+                CreateOpConversation.WAIT_FOR_CITY: [
+                    MessageHandler(Filters.text, self.handle_newop_city, pass_user_data=True)
+                ],
+                CreateOpConversation.CONFIRM_CITY: [
+                    CallbackQueryHandler(self.handle_newop_city_confirmation, pattern="city_", pass_user_data=True)
+                ],
+                CreateOpConversation.WHAT_TO_DO: [
+                    MessageHandler(Filters.text, self.handle_next_action, pass_user_data=True)
+                ],
+
                 OrderConversation.WAIT_FOR_ORDER: [
                     MessageHandler(Filters.text, self.handle_neworder_text, pass_user_data=True)
                 ]
@@ -153,7 +139,7 @@ Todo:
 
         update.message.reply_text("Hallo bei @marudor's Franzbrötchen Lieferservice\n\n"
                                   "Sag mir wo du wohnst, damit ich dich benachrichtigen kann, wenn @marudor in deine Stadt kommt.")
-        return UserCreation.WAIT_FOR_HOMETOWN
+        return CreateUserConversation.WAIT_FOR_HOMETOWN
 
     def handle_hometown(self, bot: Bot, update: Update):
         message = update.message  # type: Message
@@ -185,14 +171,14 @@ Todo:
     def command_changehometown(self, bot: Bot, update: Update):
         update.message.reply_text(
             "Sag mir wo du wohnst, damit ich dich benachrichtigen kann, wenn @marudor in deine Stadt kommt.")
-        return UserCreation.WAIT_FOR_HOMETOWN
+        return CreateUserConversation.WAIT_FOR_HOMETOWN
 
     @marudor_only
     def command_newop(self, bot: Bot, update: Update):
         update.message.reply_text(
             "An welchem Tag bist du unterwegs? (Verwende nach Möglichkeit das Format <em>dd.mm.yyyy</em>)",
             parse_mode=ParseMode.HTML)
-        return OpCreation.WAIT_FOR_DATE
+        return CreateOpConversation.WAIT_FOR_DATE
 
     def handle_newop_date(self, bot: Bot, update: Update, user_data):
         text = update.message.text
@@ -204,14 +190,17 @@ Todo:
         keyboard = self.generate_cities_keyboard()
         update.message.reply_text("In welche Stadt bist du unterwegs?",
                                   reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True))
-        return OpCreation.WAIT_FOR_CITY
+        return CreateOpConversation.WAIT_FOR_CITY
 
     def generate_cities_keyboard(self):
-        cities = self.db.table("users").select("hometown").distinct().order_by("hometown", "asc").get()
+        # select distinct hometown as city from users union select distinct city from opportunities order by city asc;
+        op_cities = self.db.table("opportunities").distinct().select("city")
+        cities = self.db.table("users").distinct().select("hometown as city").union(op_cities).order_by("city",
+                                                                                                        "asc").get()
 
         keyboard = []
         for c in cities:
-            keyboard.append([KeyboardButton(c.hometown)])
+            keyboard.append([KeyboardButton(c.city)])
 
         return keyboard
 
@@ -227,7 +216,7 @@ Todo:
                 "Niemand wohnt in diesem Ort. Möchtest du die Reise trotzdem eintragen?",
                 reply_markup=self.generate_yesno_inlinekeyboard())
             user_data["confirm_city_mid"] = reply.message_id
-            return OpCreation.CONFIRM_CITY
+            return CreateOpConversation.CONFIRM_CITY
 
         self.save_opportunity(user_data)
 
@@ -239,7 +228,7 @@ Todo:
 
         keyboard = self.generate_next_action_keyboard()
         update.message.reply_text(text, reply_markup=keyboard)
-        return OpCreation.WHAT_TO_DO
+        return CreateOpConversation.WHAT_TO_DO
 
     def save_opportunity(self, user_data):
         opportunity = user_data["newop"]
@@ -269,7 +258,7 @@ Todo:
             bot.sendMessage(chat_id=update.effective_chat.id,
                             text="Was möchtest du als nächstes tun?",
                             reply_markup=keyboard)
-            return OpCreation.WHAT_TO_DO
+            return CreateOpConversation.WHAT_TO_DO
 
         elif query.data == "city_cancel":
             user_data.clear()
@@ -280,7 +269,7 @@ Todo:
             bot.sendMessage(chat_id=update.effective_chat.id,
                             text="Was möchtest du als nächstes tun?",
                             reply_markup=keyboard)
-            return OpCreation.WHAT_TO_DO
+            return CreateOpConversation.WHAT_TO_DO
 
     def generate_next_action_keyboard(self):
         keyboard = [[KeyboardButton("Nächste Reise eintragen")],
@@ -293,7 +282,7 @@ Todo:
                                       "An welchem Tag bist du unterwegs? (Verwende nach Möglichkeit das Format <em>dd.mm.yyyy</em>)",
                                       parse_mode=ParseMode.HTML,
                                       reply_markup=ReplyKeyboardRemove())
-            return OpCreation.WAIT_FOR_DATE
+            return CreateOpConversation.WAIT_FOR_DATE
 
         elif update.message.text == "Fertig":
             update.message.reply_text("Okay, das war's dann.",
