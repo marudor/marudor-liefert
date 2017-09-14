@@ -27,6 +27,21 @@ from telegram.update import Update
 
 from models import User, Opportunity, Order
 
+"""
+Commands:
+changehometown - Ändere deinen Wohnort
+newop - Trage neue Reise ein (marudor-only)
+cancel - Bricht die aktuelle Aktion ab
+
+Todo:
+- /deleteop (marudor-only)
+- /listorders (marudor-only)
+- /myorders
+- /notify (marudor-only) (Benachrichtigt alle Nutzer in einer Stadt)
+- Bestellschluss
+- Send location for detecting hometown
+"""
+
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -63,6 +78,7 @@ class marudor_only:
 class CreateUserConversation:
     WAIT_FOR_HOMETOWN = 0
 
+
 class CreateOpConversation:
     WAIT_FOR_DATE = 1
     WAIT_FOR_CITY = 2
@@ -71,21 +87,15 @@ class CreateOpConversation:
 
 
 class OrderConversation:
-    WAIT_FOR_ORDER = 5
+    WAIT_FOR_ORDER_TEXT = 5
+
+
+class NextActionKeyboard:
+    NEUE_REISE = "Nächste Reise eintragen"
+    FERTIG = "Fertig"
 
 
 class MarudorLiefertBot:
-    """
-Commands:
-changehometown - Ändere deinen Wohnort
-newop - Trage neue Reise ein (marudor-only)
-
-Todo:
-- Zeige nur zukünftige Reisen an
-- /deleteop
-- /myorders
-    """
-
     def __init__(self):
         self.config = json.load(open("config.json"))
 
@@ -100,7 +110,8 @@ Todo:
                 CommandHandler("start", self.command_start),
                 CommandHandler("changehometown", self.command_changehometown),
                 CommandHandler("newop", self.command_newop),
-                RegexHandler("/order_(\d+)", self.command_order, pass_groups=True, pass_user_data=True)
+                RegexHandler("/order_(\d+)", self.command_order, pass_groups=True, pass_user_data=True),
+                MessageHandler(Filters.text, self.handle_fetch_op)
             ],
             states={
                 CreateUserConversation.WAIT_FOR_HOMETOWN: [
@@ -120,11 +131,13 @@ Todo:
                     MessageHandler(Filters.text, self.handle_next_action, pass_user_data=True)
                 ],
 
-                OrderConversation.WAIT_FOR_ORDER: [
+                OrderConversation.WAIT_FOR_ORDER_TEXT: [
                     MessageHandler(Filters.text, self.handle_neworder_text, pass_user_data=True)
                 ]
             },
-            fallbacks=[]
+            fallbacks=[
+                CommandHandler("cancel", self.command_cancel, pass_user_data=True)
+            ]
         ))
 
         dp.add_error_handler(self.handle_error)
@@ -133,19 +146,41 @@ Todo:
         updater.idle()
 
     def command_start(self, bot: Bot, update: Update):
-        if marudor_only.is_marudor(update.effective_user.username):
+        t_user = update.effective_user
+        if marudor_only.is_marudor(t_user.username):
             update.message.reply_text("Hallo @marudor. Was kann ich für dich tun?")
             return ConversationHandler.END
 
-        update.message.reply_text("Hallo bei @marudor's Franzbrötchen Lieferservice\n\n"
-                                  "Sag mir wo du wohnst, damit ich dich benachrichtigen kann, wenn @marudor in deine Stadt kommt.")
+        user = User.telegram(t_user.id)
+        if user:
+            opportunities = Opportunity.for_me(user)
+            if (t_user.username):
+                text = "Willkommen zurück, @%s\n\n" % t_user.username
+            else:
+                text = "Willkommen zurück.\n\n"
+
+            if opportunities.count() > 0:
+                text += "@marudor kommt an folgenden Tagen in deine Stadt:"
+            else:
+                text += "@marudor hat keine Besuche in <strong>%s</strong> für die nächste Zeit geplant." % user.hometown
+
+            for op in opportunities:
+                text += "\n%s - Bestelle mit /order_%u" % (op.date.strftime("%d.%m.%Y"), op.id)
+
+            update.message.reply_text(text, parse_mode=ParseMode.HTML)
+            return ConversationHandler.END
+
+        update.message.reply_text("Willkommen bei @marudor's Franzbrötchen Lieferservice\n\n"
+                                  "Sag mir wo du wohnst, damit ich dich benachrichtigen kann, wenn @marudor in deine Stadt kommt.",
+                                  reply_markup=self.generate_cities_keyboard())
+
         return CreateUserConversation.WAIT_FOR_HOMETOWN
 
     def handle_hometown(self, bot: Bot, update: Update):
         message = update.message  # type: Message
         hometown = message.text
 
-        User.update_or_create(
+        user = User.update_or_create(
             attributes={
                 "telegram_user_id": message.from_user.id
             },
@@ -156,7 +191,7 @@ Todo:
         )
 
         text = "Deine Daten wurden gespeichert.\n\n"
-        opportunities = Opportunity.where_city(hometown).get()
+        opportunities = Opportunity.for_me(user)
         if opportunities.count() == 0:
             text += "Aktuell sind keine Bestellmöglichkeiten verfügbar. Ich werde dich benachrichtigen, wenn es soweit ist."
         else:
@@ -165,31 +200,71 @@ Todo:
         for op in opportunities:
             text += "<strong>%s</strong>: Bestelle mit /order_%s\n" % (op.date.strftime("%d.%m.%Y"), op.id)
 
-        update.message.reply_text(text, parse_mode=ParseMode.HTML)
+        update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
     def command_changehometown(self, bot: Bot, update: Update):
         update.message.reply_text(
-            "Sag mir wo du wohnst, damit ich dich benachrichtigen kann, wenn @marudor in deine Stadt kommt.")
+            "Sag mir wo du wohnst, damit ich dich benachrichtigen kann, wenn @marudor in deine Stadt kommt.",
+            reply_markup=self.generate_cities_keyboard())
         return CreateUserConversation.WAIT_FOR_HOMETOWN
 
     @marudor_only
     def command_newop(self, bot: Bot, update: Update):
         update.message.reply_text(
-            "An welchem Tag bist du unterwegs? (Verwende nach Möglichkeit das Format <em>dd.mm.yyyy</em>)",
+            "An welchem Tag bist du unterwegs? (Verwende das Format <em>dd.mm.yyyy</em>)",
             parse_mode=ParseMode.HTML)
         return CreateOpConversation.WAIT_FOR_DATE
 
     def handle_newop_date(self, bot: Bot, update: Update, user_data):
-        text = update.message.text
-        date = datetime.strptime(text, "%d.%m.%Y")
+        text = update.message.text  # type: str
+
+        today = datetime.now()
+
+        segments = text.strip(".").split(".", 2)
+        valid_date = True
+        try:
+            day = int(segments[0])
+        except IndexError:
+            day = today.day
+        except ValueError:
+            valid_date = False
+
+        try:
+            month = int(segments[1])
+        except IndexError:
+            month = today.month if day >= today.day else today.month + 1
+        except ValueError:
+            valid_date = False
+
+        try:
+            year = segments[2]
+            if len(year) == 2:
+                year = int("20%s" % year)
+        except IndexError:
+            year = today.year
+        except ValueError:
+            valid_date = False
+
+        if not valid_date:
+            update.message.reply_text(
+                "Ich hab keine Ahnung wovon du redest. Dir ist schon klar, dass ich ein Datum von dir wollte, oder? Probier's bitte nochmal!")
+            return
+
+        date = datetime(year, month, day)
+
+        if date < today:
+            update.message.reply_text(
+                "Solange noch keine Zeitmaschinen erfunden wurden, kannst du keine Reisen in der Vergangenheit anlegen.")
+            return
+
         user_data["newop"] = Opportunity(
             date=date
         )
 
         keyboard = self.generate_cities_keyboard()
-        update.message.reply_text("In welche Stadt bist du unterwegs?",
-                                  reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True))
+        update.message.reply_text("In welche Stadt bist du am %s unterwegs?" % date.strftime("%d.%m.%Y"),
+                                  reply_markup=keyboard)
         return CreateOpConversation.WAIT_FOR_CITY
 
     def generate_cities_keyboard(self):
@@ -202,7 +277,7 @@ Todo:
         for c in cities:
             keyboard.append([KeyboardButton(c.city)])
 
-        return keyboard
+        return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
 
     def handle_newop_city(self, bot: Bot, update: Update, user_data):
         text = update.message.text
@@ -272,19 +347,19 @@ Todo:
             return CreateOpConversation.WHAT_TO_DO
 
     def generate_next_action_keyboard(self):
-        keyboard = [[KeyboardButton("Nächste Reise eintragen")],
-                    [KeyboardButton("Fertig")]]
+        keyboard = [[KeyboardButton(NextActionKeyboard.NEUE_REISE)],
+                    [KeyboardButton(NextActionKeyboard.FERTIG)]]
         return ReplyKeyboardMarkup(keyboard)
 
     def handle_next_action(self, bot: Bot, update: Update, user_data):
-        if update.message.text == "Nächste Reise eintragen":
+        if update.message.text == NextActionKeyboard.NEUE_REISE:
             update.message.reply_text("Okay, noch eine Reise.\n\n"
                                       "An welchem Tag bist du unterwegs? (Verwende nach Möglichkeit das Format <em>dd.mm.yyyy</em>)",
                                       parse_mode=ParseMode.HTML,
                                       reply_markup=ReplyKeyboardRemove())
             return CreateOpConversation.WAIT_FOR_DATE
 
-        elif update.message.text == "Fertig":
+        elif update.message.text == NextActionKeyboard.FERTIG:
             update.message.reply_text("Okay, das war's dann.",
                                       reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
@@ -316,7 +391,7 @@ Todo:
         update.message.reply_text("Du möchtest eine Bestellung für den %s für %s machen.\n\n"
                                   "Was möchtest du bestellen?" % (
                                       opportunity.date.format("%d.%m.%Y"), opportunity.city))
-        return OrderConversation.WAIT_FOR_ORDER
+        return OrderConversation.WAIT_FOR_ORDER_TEXT
 
     def handle_neworder_text(self, bot: Bot, update: Update, user_data):
         order = user_data["neworder"]
@@ -326,6 +401,26 @@ Todo:
         user_data.clear()
 
         update.message.reply_text("Deine Bestellung wurde gespeichert.")
+        return ConversationHandler.END
+
+    def handle_fetch_op(self, bot: Bot, update: Update):
+        city = update.message.text
+        opportunities = Opportunity.where_city(city).in_future().get()
+
+        if opportunities.count() > 0:
+            text = "@marudor kommt an folgenden Tagen nach <strong>%s</strong>:\n" % city
+        else:
+            text = "@marudor kommt in nächster Zeit nicht nach <strong>%s</strong>" % city
+
+        for op in opportunities:
+            text += "\n%s: Bestelle mit /order_%u" % (op.date.strftime("%d.%m.%Y"), op.id)
+
+        update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+    def command_cancel(self, bot: Bot, update: Update, user_data):
+        user_data.clear()
+        update.message.reply_text("Okay, wir machen hier nicht weiter.",
+                                  reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
     def handle_error(self, bot: Bot, update: Update, error: TelegramError):

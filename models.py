@@ -1,10 +1,28 @@
+import yaml
 from orator import Model
-from orator.orm.utils import has_many, has_one
+from orator.database_manager import DatabaseManager
+from orator.orm.utils import has_many, has_one, scope
+
+
+def get_db():
+    config = yaml.load(open("orator.yaml"))
+    return DatabaseManager(config["databases"])
+
+
+Model.set_connection_resolver(get_db())
 
 
 class Opportunity(Model):
     __fillable__ = ["city", "date"]
     __dates__ = ["date"]
+
+    @scope
+    def in_future(self, query):
+        return query.where_raw("date >= datetime('now')")
+
+    @classmethod
+    def for_me(cls, user):
+        return cls.where_city(user.hometown).in_future().get()
 
 
 class Order(Model):
@@ -21,6 +39,10 @@ class User(Model):
     @has_many
     def orders(self):
         return Order
+
+    @classmethod
+    def telegram(cls, telegram_user_id):
+        return cls.where_telegram_user_id(telegram_user_id).first()
 
     def opportunities(self):
         return Opportunity.where_city(self.hometown).all()
