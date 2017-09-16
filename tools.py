@@ -6,7 +6,7 @@ def get_city(latitude, longitude):
     query = "%s,%s" % (latitude, longitude)
     response = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json?key=%s&result_type=locality&language=de&latlng=%s" % (
-        api_key, query))
+            api_key, query))
 
     results = response.json()
 

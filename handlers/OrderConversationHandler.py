@@ -28,7 +28,6 @@ class OrderConversationHandler(ConversationHandler):
             ]
         )
 
-
     def command_order(self, bot: Bot, update: Update, groups, user_data):
         opportunity_id = groups[0]
 
@@ -49,8 +48,6 @@ class OrderConversationHandler(ConversationHandler):
                                   "Was möchtest du bestellen?" % (
                                       opportunity.date.format("%d.%m.%Y"), opportunity.city))
         return self.WAIT_FOR_ORDER_TEXT
-
-
 
     def handle_neworder_text(self, bot: Bot, update: Update, user_data):
         order = user_data["neworder"]
