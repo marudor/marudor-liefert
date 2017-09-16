@@ -27,8 +27,9 @@ class ManageOpsConversationHandler(ConversationHandler):
         "FERTIG": "Fertig"
     }
 
-    def __init__(self, app):
+    def __init__(self, app, bot):
         self.app = app
+        self.bot = bot
 
         super().__init__(
             entry_points=[

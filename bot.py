@@ -53,11 +53,10 @@ class MarudorLiefertBot:
         self.db = load_db()
 
         updater = Updater(self.config["api_token"])
-        self.bot = updater.bot
         dp = updater.dispatcher  # type: Dispatcher
 
         dp.add_handler(WelcomeConversationHandler(self))
-        dp.add_handler(ManageOpsConversationHandler(self))
+        dp.add_handler(ManageOpsConversationHandler(self, updater.bot))
         dp.add_handler(OrderConversationHandler(self))
 
         dp.add_handler(MessageHandler(Filters.text, self.handle_fetch_op))
@@ -74,9 +73,6 @@ class MarudorLiefertBot:
             .union(op_cities).order_by("city", "asc").get()
 
         keyboard = []
-
-        if with_current_location:
-            keyboard.append([KeyboardButton("Aktueller Ort", request_location=True)])
 
         for c in cities:
             keyboard.append([KeyboardButton(c.city)])

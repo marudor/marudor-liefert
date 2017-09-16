@@ -21,8 +21,8 @@ class Opportunity(Model):
         return query.where_raw("date >= datetime('now')")
 
     @classmethod
-    def for_me(cls, user):
-        return cls.where_city(user.hometown).in_future().get()
+    def for_city(cls, city):
+        return cls.where_city(city).in_future().get()
 
 
 class Order(Model):
