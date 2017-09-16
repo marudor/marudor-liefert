@@ -24,7 +24,6 @@ from models import Opportunity
 Commands:
 changehometown - Ändere deinen Wohnort
 newop - Trage neue Reise ein (marudor-only)
-cancel - Bricht die aktuelle Aktion ab
 
 Todo:
 - /deleteop (marudor-only)
@@ -32,7 +31,6 @@ Todo:
 - /myorders
 - /notify (marudor-only) (Benachrichtigt alle Nutzer in einer Stadt)
 - Bestellschluss
-- Send location for detecting hometown
 """
 
 logging.basicConfig(level=logging.INFO,
