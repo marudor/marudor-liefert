@@ -1,7 +1,7 @@
 import yaml
 from orator import Model
 from orator.database_manager import DatabaseManager
-from orator.orm.utils import has_many, has_one, scope
+from orator.orm.utils import has_many, has_one, scope, belongs_to
 
 
 def get_db():
@@ -28,9 +28,17 @@ class Opportunity(Model):
 class Order(Model):
     __fillable__ = ["user_id", "opportunity_id", "order_text"]
 
+    @scope
+    def is_open(self, query):
+        return query.where_has("opportunity", lambda q: q.where_raw("date >= date('now')"))
+
     @has_one
     def user(self):
         return User
+
+    @belongs_to
+    def opportunity(self):
+        return Opportunity
 
 
 class User(Model):

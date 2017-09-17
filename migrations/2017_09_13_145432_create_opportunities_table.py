@@ -11,7 +11,7 @@ class CreateOpportunitiesTable(Migration):
             table.increments("id")
 
             table.string("city")
-            table.date("date")
+            table.string("date")
 
             table.timestamps()
 

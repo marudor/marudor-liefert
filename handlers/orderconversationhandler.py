@@ -40,7 +40,7 @@ class OrderConversationHandler(ConversationHandler):
             return
 
         user_data["neworder"] = Order.first_or_new(
-            user_id=update.effective_user.id,
+            user_id=user.id,
             opportunity_id=opportunity_id
         )
 

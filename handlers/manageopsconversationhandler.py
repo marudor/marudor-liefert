@@ -17,6 +17,7 @@ from telegram.update import Update
 
 from decorators import marudor_only
 from models import Opportunity, User
+from tools import parse_date
 
 
 class ManageOpsConversationHandler(ConversationHandler):
@@ -57,56 +58,30 @@ class ManageOpsConversationHandler(ConversationHandler):
     @marudor_only
     def command_newop(self, bot: Bot, update: Update):
         update.message.reply_text(
-            "An welchem Tag bist du unterwegs? (Verwende das Format <em>dd.mm.yyyy</em>)",
+            "An welchem Tag bist du unterwegs?",
             parse_mode=ParseMode.HTML)
         return self.WAIT_FOR_DATE
 
     def command_cancel(self, bot: Bot, update: Update, user_data):
         user_data.clear()
-        update.message.reply_text("Okay, wir machen hier nicht weiter.",
+        update.message.reply_text("Okay, ich vergesse die Reisedaten.",
                                   reply_markup=ReplyKeyboardRemove())
         return self.END
 
     def handle_newop_date(self, bot: Bot, update: Update, user_data):
         text = update.message.text  # type: str
 
-        today = datetime.now()
+        date = parse_date(text)
 
-        segments = text.strip(".").split(".", 2)
-        valid_date = True
-        try:
-            day = int(segments[0])
-        except IndexError:
-            day = today.day
-        except ValueError:
-            valid_date = False
-
-        try:
-            month = int(segments[1])
-        except IndexError:
-            month = today.month if day >= today.day else today.month + 1
-        except ValueError:
-            valid_date = False
-
-        try:
-            year = segments[2]
-            if len(year) == 2:
-                year = int("20%s" % year)
-        except IndexError:
-            year = today.year
-        except ValueError:
-            valid_date = False
-
-        if not valid_date:
+        if not date:
             update.message.reply_text(
                 "Ich hab keine Ahnung wovon du redest. Dir ist schon klar, dass ich ein Datum von dir wollte, oder? Probier's bitte nochmal!")
             return
 
-        date = datetime(year, month, day)
-
-        if date < today:
+        if date < datetime.now():
             update.message.reply_text(
-                "Solange noch keine Zeitmaschinen erfunden wurden, kannst du keine Reisen in der Vergangenheit anlegen.")
+                "Solange noch keine Zeitmaschinen erfunden wurden, kannst du keine Reisen in der Vergangenheit anlegen.\n"
+                "Wann willst du wirklich reisen?")
             return
 
         user_data["newop"] = Opportunity(
@@ -124,8 +99,8 @@ class ManageOpsConversationHandler(ConversationHandler):
         user_data["newop"].city = text
 
         city_user_count = User.where_hometown(text).count()
-        city_has_subscribers = city_user_count == 0
-        if city_has_subscribers:
+        city_has_subscribers = city_user_count > 0
+        if not city_has_subscribers:
             reply = update.message.reply_text(
                 "Niemand wohnt in diesem Ort. Möchtest du die Reise trotzdem eintragen?",
                 reply_markup=self.generate_yesno_inlinekeyboard())

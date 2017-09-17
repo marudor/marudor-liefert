@@ -6,6 +6,7 @@ from orator.database_manager import DatabaseManager
 from orator.orm.model import Model
 from telegram.bot import Bot
 from telegram.error import TelegramError
+from telegram.ext.commandhandler import CommandHandler
 from telegram.ext.dispatcher import Dispatcher
 from telegram.ext.filters import Filters
 from telegram.ext.messagehandler import MessageHandler
@@ -18,7 +19,7 @@ from telegram.update import Update
 from handlers.manageopsconversationhandler import ManageOpsConversationHandler
 from handlers.orderconversationhandler import OrderConversationHandler
 from handlers.welcomeconversationhandler import WelcomeConversationHandler
-from models import Opportunity
+from models import Opportunity, User
 
 """
 Commands:
@@ -56,6 +57,7 @@ class MarudorLiefertBot:
         dp.add_handler(WelcomeConversationHandler(self))
         dp.add_handler(ManageOpsConversationHandler(self, updater.bot))
         dp.add_handler(OrderConversationHandler(self))
+        dp.add_handler(CommandHandler("myorders", self.command_myorders))
 
         dp.add_handler(MessageHandler(Filters.text, self.handle_fetch_op))
 
@@ -63,6 +65,15 @@ class MarudorLiefertBot:
 
         updater.start_polling()
         updater.idle()
+
+    def command_myorders(self, bot: Bot, update: Update):
+        user = User.telegram(update.message.from_user.id)
+        open_orders = user.orders().is_open().get()
+
+        for order in open_orders:
+            pass
+
+        # update.message.reply_text(text)
 
     def generate_cities_keyboard(self, with_current_location=False):
         # select distinct hometown as city from users union select distinct city from opportunities order by city asc;
