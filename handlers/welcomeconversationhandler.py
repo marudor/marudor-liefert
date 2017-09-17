@@ -49,8 +49,8 @@ class WelcomeConversationHandler(ConversationHandler):
         text = "Hallo @marudor."
         text += self.generate_command_intro(is_marudor=True)
 
-        update.message.reply_text(text)
-        return ConversationHandler.END
+        update.message.reply_text(text, parse_mode=ParseMode.HTML)
+        return self.END
 
     def start_existing_user(self, bot: Bot, update: Update, user):
         t_user = update.effective_user
@@ -71,7 +71,7 @@ class WelcomeConversationHandler(ConversationHandler):
         text += self.generate_command_intro()
 
         update.message.reply_text(text, parse_mode=ParseMode.HTML)
-        return ConversationHandler.END
+        return self.END
 
     def start_new_user(self, bot: Bot, update: Update, user_data):
         update.message.reply_text("Willkommen bei @marudor's Franzbrötchen Lieferservice\n\n"
@@ -122,7 +122,7 @@ class WelcomeConversationHandler(ConversationHandler):
             text += self.generate_command_intro()
 
         update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=ReplyKeyboardRemove())
-        return ConversationHandler.END
+        return self.END
 
     def generate_command_intro(self, is_marudor=False):
         text =  """

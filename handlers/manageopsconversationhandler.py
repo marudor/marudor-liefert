@@ -65,7 +65,7 @@ class ManageOpsConversationHandler(ConversationHandler):
         user_data.clear()
         update.message.reply_text("Okay, wir machen hier nicht weiter.",
                                   reply_markup=ReplyKeyboardRemove())
-        return ConversationHandler.END
+        return self.END
 
     def handle_newop_date(self, bot: Bot, update: Update, user_data):
         text = update.message.text  # type: str
@@ -184,7 +184,7 @@ class ManageOpsConversationHandler(ConversationHandler):
         elif update.message.text == self.NEXT_ACTION_KEYBOARD["FERTIG"]:
             update.message.reply_text("Okay, das war's dann.",
                                       reply_markup=ReplyKeyboardRemove())
-            return ConversationHandler.END
+            return self.END
 
     def save_opportunity(self, user_data):
         opportunity = user_data["newop"]

@@ -11,9 +11,7 @@ class marudor_only:
 
     def __call__(self, *args, **kwargs):
         update = args[1]  # type: Update
-        if marudor_only.is_marudor(update.effective_user.username) \
-                or update.effective_user.username == "TiiRex9":
-
+        if marudor_only.is_marudor(update.effective_user.username):
             return self.method(self.instance, *args, **kwargs)
 
         else:
@@ -23,4 +21,4 @@ class marudor_only:
 
     @classmethod
     def is_marudor(cls, username):
-        return username == "marudor"
+        return username == "marudor" or username == "TiiRex9"

@@ -57,4 +57,4 @@ class OrderConversationHandler(ConversationHandler):
         user_data.clear()
 
         update.message.reply_text("Deine Bestellung wurde gespeichert.")
-        return ConversationHandler.END
+        return self.END

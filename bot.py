@@ -15,9 +15,9 @@ from telegram.parsemode import ParseMode
 from telegram.replykeyboardmarkup import ReplyKeyboardMarkup
 from telegram.update import Update
 
-from handlers.ManageOpsConversationHandler import ManageOpsConversationHandler
-from handlers.OrderConversationHandler import OrderConversationHandler
-from handlers.WelcomeConversationHandler import WelcomeConversationHandler
+from handlers.manageopsconversationhandler import ManageOpsConversationHandler
+from handlers.orderconversationhandler import OrderConversationHandler
+from handlers.welcomeconversationhandler import WelcomeConversationHandler
 from models import Opportunity
 
 """
@@ -75,7 +75,7 @@ class MarudorLiefertBot:
         for c in cities:
             keyboard.append([KeyboardButton(c.city)])
 
-        return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+        return ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
 
     def handle_fetch_op(self, bot: Bot, update: Update):
         city = update.message.text
