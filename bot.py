@@ -16,7 +16,8 @@ from telegram.parsemode import ParseMode
 from telegram.replykeyboardmarkup import ReplyKeyboardMarkup
 from telegram.update import Update
 
-from handlers.manageopsconversationhandler import ManageOpsConversationHandler
+from handlers.listopportunitiesconversationhandler import ListOpportunitiesConversationHandler
+from handlers.newopconversationhandler import NewOpConversationHandler
 from handlers.orderconversationhandler import OrderConversationHandler
 from handlers.welcomeconversationhandler import WelcomeConversationHandler
 from models import Opportunity, User
@@ -25,12 +26,7 @@ from models import Opportunity, User
 Commands:
 changehometown - Ändere deinen Wohnort
 newop - Trage neue Reise ein (marudor-only)
-
-Todo:
-- /deleteop (marudor-only)
-- /listorders (marudor-only)
-- /notify (marudor-only) (Benachrichtigt alle Nutzer in einer Stadt)
-- Bestellschluss
+listops - Liste Bestellungen für zukünftige Reisen (marudor-only)
 """
 
 logging.basicConfig(level=logging.INFO,
@@ -54,10 +50,12 @@ class MarudorLiefertBot:
         dp = updater.dispatcher  # type: Dispatcher
 
         dp.add_handler(WelcomeConversationHandler(self))
-        dp.add_handler(ManageOpsConversationHandler(self, updater.bot))
+        dp.add_handler(NewOpConversationHandler(self, updater.bot))
         dp.add_handler(OrderConversationHandler(self))
         dp.add_handler(CommandHandler("myorders", self.command_myorders))
-        dp.add_handler(ListOrderConversationHandler(self))
+        dp.add_handler(ListOpportunitiesConversationHandler(self))
+
+        # Todo: /notify (marudor-only) (Benachrichtigt alle Nutzer in einer Stadt)
 
         dp.add_handler(MessageHandler(Filters.text, self.handle_fetch_op))
 
@@ -77,7 +75,7 @@ class MarudorLiefertBot:
 
         for order in open_orders:
             op = order.opportunity
-            text += "\n\nAm %s in %s:\n<em>%s</em>\nEdit with /order_%u" % (
+            text += "\n\nAm %s in %s:\n<em>%s</em>\nBearbeite mit /order_%u" % (
                 op.date.strftime("%d.%m.%Y"), op.city, order.order_text, op.id)
 
         update.message.reply_text(text, parse_mode=ParseMode.HTML)

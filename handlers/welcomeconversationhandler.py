@@ -134,6 +134,7 @@ Du kannst folgende Befehle ausführen:
             text += """
 
 <strong>Für @marudor:</strong>
-/newop - Trage eine neue Reise ein."""
+/newop - Trage eine neue Reise ein.
+/listops - Liste ausstehende Reisen auf"""
 
         return text

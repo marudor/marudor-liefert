@@ -20,7 +20,7 @@ from models import Opportunity, User
 from tools import parse_date
 
 
-class ManageOpsConversationHandler(ConversationHandler):
+class NewOpConversationHandler(ConversationHandler):
     WAIT_FOR_DATE, WAIT_FOR_CITY, CONFIRM_CITY, WHAT_TO_DO = range(4)
 
     NEXT_ACTION_KEYBOARD = {

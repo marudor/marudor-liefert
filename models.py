@@ -20,9 +20,20 @@ class Opportunity(Model):
     def in_future(self, query):
         return query.where_raw("date >= datetime('now')").order_by("date", "asc")
 
+    @scope
+    def in_future_or_today(self, query):
+        return query.where_raw("date >= date('now')").order_by("date", "asc")
+
     @classmethod
     def for_city(cls, city):
         return cls.where_city(city).in_future().get()
+
+    def date_readable(self):
+        return self.date.strftime("%d.%m.%Y")
+
+    @has_many
+    def orders(self):
+        return Order
 
 
 class Order(Model):
@@ -32,7 +43,7 @@ class Order(Model):
     def is_open(self, query):
         return query.where_has("opportunity", lambda q: q.where_raw("date >= date('now')"))
 
-    @has_one
+    @belongs_to
     def user(self):
         return User
 
