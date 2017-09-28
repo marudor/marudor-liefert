@@ -29,7 +29,6 @@ newop - Trage neue Reise ein (marudor-only)
 Todo:
 - /deleteop (marudor-only)
 - /listorders (marudor-only)
-- /myorders
 - /notify (marudor-only) (Benachrichtigt alle Nutzer in einer Stadt)
 - Bestellschluss
 """
@@ -58,6 +57,7 @@ class MarudorLiefertBot:
         dp.add_handler(ManageOpsConversationHandler(self, updater.bot))
         dp.add_handler(OrderConversationHandler(self))
         dp.add_handler(CommandHandler("myorders", self.command_myorders))
+        dp.add_handler(ListOrderConversationHandler(self))
 
         dp.add_handler(MessageHandler(Filters.text, self.handle_fetch_op))
 
@@ -70,10 +70,17 @@ class MarudorLiefertBot:
         user = User.telegram(update.message.from_user.id)
         open_orders = user.orders().is_open().get()
 
-        for order in open_orders:
-            pass
+        if open_orders.count() == 0:
+            text = "Du hast keine offenen Bestellungen."
+        else:
+            text = "Deine offenen Bestellungen:"
 
-        # update.message.reply_text(text)
+        for order in open_orders:
+            op = order.opportunity
+            text += "\n\nAm %s in %s:\n<em>%s</em>\nEdit with /order_%u" % (
+                op.date.strftime("%d.%m.%Y"), op.city, order.order_text, op.id)
+
+        update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
     def generate_cities_keyboard(self, with_current_location=False):
         # select distinct hometown as city from users union select distinct city from opportunities order by city asc;

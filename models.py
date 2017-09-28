@@ -18,7 +18,7 @@ class Opportunity(Model):
 
     @scope
     def in_future(self, query):
-        return query.where_raw("date >= datetime('now')")
+        return query.where_raw("date >= datetime('now')").order_by("date", "asc")
 
     @classmethod
     def for_city(cls, city):
