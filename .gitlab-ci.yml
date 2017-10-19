@@ -1,0 +1,11 @@
+deploy_production:
+    stage: deploy
+    only:
+        - master
+    tags:
+        - foxbrittle
+    environment:
+        name: production
+    script:
+        - cp -r * /home/tii/telegram/telegram-marudor-liefert
+        - sudo systemctl restart telegram-marudor-liefert
