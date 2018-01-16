@@ -16,7 +16,7 @@ from telegram.keyboardbutton import KeyboardButton
 from telegram.parsemode import ParseMode
 from telegram.replykeyboardmarkup import ReplyKeyboardMarkup
 from telegram.update import Update
-
+import os
 from handlers.listopportunitiesconversationhandler import ListOpportunitiesConversationHandler
 from handlers.newopconversationhandler import NewOpConversationHandler
 from handlers.orderconversationhandler import OrderConversationHandler
@@ -35,7 +35,14 @@ logging.basicConfig(level=logging.INFO,
 
 
 def load_db():
-    config = yaml.load(open("orator.yaml"))
+    config = {
+        "databases": {
+            "sqlite": {
+                "driver": "sqlite",
+                "database": "data.sqlite"
+            }
+        }
+    }
     db = DatabaseManager(config["databases"])
     Model.set_connection_resolver(db)
     return db
@@ -43,7 +50,9 @@ def load_db():
 
 class MarudorLiefertBot:
     def __init__(self):
-        self.config = json.load(open("config.json"))
+        self.config = {
+            "api_token": os.environ["API_TOKEN"]
+        }
 
         self.db = load_db()
 
