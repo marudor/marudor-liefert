@@ -51,7 +51,7 @@ def load_db():
 class MarudorLiefertBot:
     def __init__(self):
         self.config = {
-            "api_token": os.environ["API_TOKEN"]
+            "api_token": os.getenv("API_TOKEN")
         }
 
         self.db = load_db()
