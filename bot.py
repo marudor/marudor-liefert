@@ -35,14 +35,7 @@ logging.basicConfig(level=logging.INFO,
 
 
 def load_db():
-    config = {
-        "databases": {
-            "sqlite": {
-                "driver": "sqlite",
-                "database": "data.sqlite"
-            }
-        }
-    }
+    config = yaml.load(open("orator.yaml"))
     db = DatabaseManager(config["databases"])
     Model.set_connection_resolver(db)
     return db

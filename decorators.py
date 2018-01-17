@@ -1,7 +1,7 @@
 from telegram.ext.conversationhandler import ConversationHandler
 
 
-class marudor_only:
+class MarudorOnly:
     def __init__(self, method):
         self.method = method
 
@@ -11,7 +11,8 @@ class marudor_only:
 
     def __call__(self, *args, **kwargs):
         update = args[1]  # type: Update
-        if marudor_only.is_marudor(update.effective_user.username):
+        print(update)
+        if MarudorOnly.is_marudor(update.effective_user.username):
             return self.method(self.instance, *args, **kwargs)
 
         else:
@@ -21,4 +22,4 @@ class marudor_only:
 
     @classmethod
     def is_marudor(cls, username):
-        return username == "marudor" or username == "TiiRex9"
+        return username == "marudor"

@@ -7,6 +7,7 @@ from telegram.inline.inlinekeyboardbutton import InlineKeyboardButton
 from telegram.inline.inlinekeyboardmarkup import InlineKeyboardMarkup
 from telegram.parsemode import ParseMode
 from telegram.update import Update
+from decorators import MarudorOnly
 
 from models import Opportunity
 
@@ -32,6 +33,7 @@ class ListOpportunitiesConversationHandler(ConversationHandler):
             ]
         )
 
+    @MarudorOnly
     def command_listops(self, bot: Bot, update: Update):
         opportunities = Opportunity.in_future_or_today().get()
 

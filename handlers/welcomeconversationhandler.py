@@ -6,8 +6,8 @@ from telegram.ext.messagehandler import MessageHandler
 from telegram.parsemode import ParseMode
 from telegram.replykeyboardremove import ReplyKeyboardRemove
 from telegram.update import Update
+from decorators import MarudorOnly
 
-from decorators import marudor_only
 from models import User, Opportunity
 from tools import get_city
 
@@ -35,7 +35,7 @@ class WelcomeConversationHandler(ConversationHandler):
 
     def command_start(self, bot: Bot, update: Update, user_data):
         t_user = update.effective_user
-        if marudor_only.is_marudor(t_user.username):
+        if MarudorOnly.is_marudor(t_user.username):
             return self.start_marudor(bot, update)
 
 

@@ -1,3 +1,4 @@
+
 from telegram.bot import Bot
 from telegram.ext.conversationhandler import ConversationHandler
 from telegram.ext.filters import Filters
@@ -45,8 +46,10 @@ class OrderConversationHandler(ConversationHandler):
         )
 
         update.message.reply_text("Du möchtest eine Bestellung für den %s für %s machen.\n\n"
-                                  "Was möchtest du bestellen?" % (
+                                  "Wieviele Franzbrötchen möchtest du bestellen?" % (
                                       opportunity.date.format("%d.%m.%Y"), opportunity.city))
+        update.message.reply_text("Spendenempfehlung sind 1,5€ für ein normales Franzbrötchen. 2€ für ein Special Franzbrötchen.\n"
+                                  "Gerne per https://www.paypal.me/marudor überweisen!")
         return self.WAIT_FOR_ORDER_TEXT
 
     def handle_neworder_text(self, bot: Bot, update: Update, user_data):

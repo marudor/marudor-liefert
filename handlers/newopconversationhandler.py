@@ -15,7 +15,7 @@ from telegram.replykeyboardmarkup import ReplyKeyboardMarkup
 from telegram.replykeyboardremove import ReplyKeyboardRemove
 from telegram.update import Update
 
-from decorators import marudor_only
+from decorators import MarudorOnly
 from models import Opportunity, User
 from tools import parse_date
 
@@ -55,7 +55,7 @@ class NewOpConversationHandler(ConversationHandler):
             ]
         )
 
-    @marudor_only
+    @MarudorOnly
     def command_newop(self, bot: Bot, update: Update):
         update.message.reply_text(
             "An welchem Tag bist du unterwegs?",
