@@ -54,6 +54,7 @@ class ListOpportunitiesConversationHandler(ConversationHandler):
 
         update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
+    @MarudorOnly
     def command_showorders(self, bot: Bot, update: Update, groups):
         opportunity_id = groups[0]
 
