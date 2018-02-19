@@ -46,7 +46,7 @@ class OrderConversationHandler(ConversationHandler):
         )
 
         update.message.reply_text("Du möchtest eine Bestellung für den %s für %s machen.\n\n"
-                                  "Wieviele Franzbrötchen möchtest du bestellen?" % (
+                                  "Wieviele - und welche - Franzbrötchen möchtest du bestellen?" % (
                                       opportunity.date.format("%d.%m.%Y"), opportunity.city))
         update.message.reply_text("Spendenempfehlung sind 1,5€ für ein normales Franzbrötchen. 2€ für ein Special Franzbrötchen.\n"
                                   "Gerne per https://www.paypal.me/marudor überweisen!")

@@ -18,7 +18,6 @@ def get_city(latitude, longitude):
     return city
 
 
-
 def parse_date(text):
     today = datetime.now()
 

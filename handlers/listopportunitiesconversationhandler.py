@@ -33,8 +33,8 @@ class ListOpportunitiesConversationHandler(ConversationHandler):
             ]
         )
 
-    @MarudorOnly
-    def command_listops(self, bot: Bot, update: Update):
+
+    def command_listops_marudor(self, bot: Bot, update: Update):
         opportunities = Opportunity.in_future_or_today().get()
 
         if opportunities.count() == 0:
@@ -53,6 +53,30 @@ class ListOpportunitiesConversationHandler(ConversationHandler):
                     )
 
         update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+    def command_listops_normal(self, bot: Bot, update: Update):
+        opportunities = Opportunity.in_future_or_today().get()
+        if opportunities.count() == 0:
+            text = "Es gibt aktuell keine eingetragenen Reisen."
+        else:
+            text = "marudor kommt an folgende Orte:"
+
+        for op in opportunities:
+            text += "\n\nAm %s nach <strong>%s</strong>" \
+                    "\n<em>Bestellen</em>: /order_%u" % (
+                op.date.strftime("%d.%m.%Y"),
+                op.city,
+                op.id,
+            )
+
+        update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+    def command_listops(self, bot: Bot, update: Update):
+        t_user = update.effective_user
+        if MarudorOnly.is_marudor(t_user.username):
+            self.command_listops_marudor(bot, update)
+        else:
+            self.command_listops_normal(bot, update)
 
     @MarudorOnly
     def command_showorders(self, bot: Bot, update: Update, groups):
@@ -80,6 +104,7 @@ class ListOpportunitiesConversationHandler(ConversationHandler):
 
         update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
+    @MarudorOnly
     def command_deleteop(self, bot: Bot, update: Update, groups, user_data):
         opportunity_id = groups[0]
 
@@ -108,6 +133,7 @@ class ListOpportunitiesConversationHandler(ConversationHandler):
 
         return self.CONFIRM_DELETION
 
+    @MarudorOnly
     def handle_delete_confirmation(self, bot: Bot, update: Update, user_data):
         if update.callback_query.data == "deleteop_confirm":
             opportunity_id = user_data["delete_opportunity_id"]

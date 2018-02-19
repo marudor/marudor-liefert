@@ -62,6 +62,7 @@ class NewOpConversationHandler(ConversationHandler):
             parse_mode=ParseMode.HTML)
         return self.WAIT_FOR_DATE
 
+    @MarudorOnly
     def command_cancel(self, bot: Bot, update: Update, user_data):
         user_data.clear()
         update.message.reply_text("Okay, ich vergesse die Reisedaten.",
@@ -120,6 +121,7 @@ class NewOpConversationHandler(ConversationHandler):
 
         return self.WHAT_TO_DO
 
+    @MarudorOnly
     def handle_newop_city_confirmation(self, bot: Bot, update: Update, user_data):
         mid = user_data["confirm_city_mid"]
         query = update.callback_query  # type: CallbackQuery

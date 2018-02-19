@@ -21,6 +21,7 @@ class WelcomeConversationHandler(ConversationHandler):
         super().__init__(
             entry_points=[
                 CommandHandler("start", self.command_start, pass_user_data=True),
+                CommandHandler("help", self.command_start, pass_user_data=True),
                 CommandHandler("changehometown", self.command_changehometown)
             ],
             states={
@@ -38,7 +39,6 @@ class WelcomeConversationHandler(ConversationHandler):
         if MarudorOnly.is_marudor(t_user.username):
             return self.start_marudor(bot, update)
 
-
         user = User.telegram(t_user.id)
         if user:
             return self.start_existing_user(bot, update, user)
@@ -55,7 +55,7 @@ class WelcomeConversationHandler(ConversationHandler):
     def start_existing_user(self, bot: Bot, update: Update, user):
         t_user = update.effective_user
         opportunities = Opportunity.for_city(user.hometown)
-        if (t_user.username):
+        if t_user.username:
             text = "Willkommen zurück, @%s\n\n" % t_user.username
         else:
             text = "Willkommen zurück.\n\n"
@@ -128,13 +128,13 @@ class WelcomeConversationHandler(ConversationHandler):
         text =  """
 
 Du kannst folgende Befehle ausführen:
-/changehometown - Ändert den Ort zu dem du benachrichtigt wirst."""
+/changehometown - Ändert den Ort zu dem du benachrichtigt wirst.
+/listops - Liste ausstehende Reisen auf"""
 
         if is_marudor:
             text += """
 
 <strong>Für @marudor:</strong>
-/newop - Trage eine neue Reise ein.
-/listops - Liste ausstehende Reisen auf"""
+/newop - Trage eine neue Reise ein."""
 
         return text
